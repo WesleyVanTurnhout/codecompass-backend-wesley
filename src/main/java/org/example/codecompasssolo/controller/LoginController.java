@@ -1,23 +1,25 @@
 package org.example.codecompasssolo.controller;
 
-import org.example.codecompasssolo.Service.SupabaseAuthService;
-import org.example.codecompasssolo.dto.LoginCredentials;
+import org.example.codecompasssolo.Service.LoginService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.Console;
 
 
 @RestController
 public class LoginController {
 
     @Autowired
-    private SupabaseAuthService supabaseAuthService;
+    private LoginService loginService;
 
     @PostMapping("/api/login")
-    public ResponseEntity<?> attemptLogin(@RequestBody LoginCredentials credentials) {
-        return supabaseAuthService.attemptLogin(credentials.getEmail(), credentials.getPassword());
+    public String attemptLogin(@RequestParam String username) {
+        System.out.print(username);
+        return loginService.attemptLogin(username);
     }
 
 
