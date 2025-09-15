@@ -113,11 +113,4 @@ public class UserEntity {
     private ProfileEntity profile;
 
     // Getters and Setters ...
-    public String getRole() {
-        return role;
-    }
-
-    public ProfileEntity getProfile() {
-        return profile;
-    }
 }
