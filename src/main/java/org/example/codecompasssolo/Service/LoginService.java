@@ -21,9 +21,14 @@ public class LoginService {
 
     public boolean attemptLogin(String email, String password) {
         UserEntity user = userRepository.findByEmailAndEncryptedPassword(email, password);
+
         if (user == null) {
             return false;
         }
-        return true;
+
+        if (user.getProfile().getRole().equals("ADMIN")) {
+            return true;
+        }
+        return false;
     }
 }
