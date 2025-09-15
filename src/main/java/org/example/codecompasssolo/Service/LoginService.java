@@ -19,11 +19,11 @@ public class LoginService {
     @Autowired
     private UserRepository userRepository;
 
-    public String attemptLogin(String email, String password) {
+    public boolean attemptLogin(String email, String password) {
         UserEntity user = userRepository.findByEmailAndEncryptedPassword(email, password);
         if (user == null) {
-            return "User and password combination not found";
+            return false;
         }
-        return "User: " + user;
+        return true;
     }
 }

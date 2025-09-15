@@ -17,8 +17,7 @@ public class LoginController {
     private LoginService loginService;
 
     @PostMapping("/api/login")
-    public String attemptLogin(@RequestParam String email, @RequestParam String password) {
-        System.out.print(email);
+    public Boolean attemptLogin(@RequestParam String email, @RequestParam String password) {
         return loginService.attemptLogin(email, password);
     }
 
