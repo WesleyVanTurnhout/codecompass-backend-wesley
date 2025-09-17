@@ -1,15 +1,21 @@
 package org.example.codecompasssolo.Service;
 
-import org.example.codecompasssolo.dto.LoginCredentials;
 import org.example.codecompasssolo.entity.ProfileEntity;
+import org.example.codecompasssolo.entity.UserEntity;
 import org.example.codecompasssolo.repository.ProfileRepository;
+import org.example.codecompasssolo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
 
+
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -18,15 +24,12 @@ public class SupabaseAuthService {
     @Autowired
     ProfileRepository profileRepository;
 
-    @Value("${SUPABASE_PROJECT_URL}")
-    String supabaseProjectUrl;
-
-    @Value("${SUPABASE_ANON_API_KEY}")
-    String supabase_anon_api_key;
-
-    public ResponseEntity attemptLogin(String email, String password) {
+    public Boolean attemptLogin(String email, String password) {
 
         RestTemplate restTemplate = new RestTemplate();
+        //@TODO dit ook in .env zetten
+        String supabaseProjectUrl = "https://mingbxukwyoovoamwgnu.supabase.co";
+        String supabase_anon_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbmdieHVrd3lvb3ZvYW13Z251Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2NjY1ODIsImV4cCI6MjA3MzI0MjU4Mn0.pCetKiRF60M6K5xjqTeup6UkarsuDEi9i68m-JLxD8Q";
 
         String loginUrl = supabaseProjectUrl + "/auth/v1/token?grant_type=password";
 
@@ -34,16 +37,29 @@ public class SupabaseAuthService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("apikey", supabase_anon_api_key);
 
-        LoginCredentials loginCredentials = new LoginCredentials(email, password);
-        HttpEntity<LoginCredentials> request = new HttpEntity<>(loginCredentials, headers);
 
+//        //@TODO TMP Quick class, later eigen file, netter uitwerekn,.
+//        class LoginCredentials {
+//            public String username;
+//            public String password;
+//            public LoginCredentials(String username, String password) {
+//                this.username = username;
+//                this.password = password;
+//            }
+//        }
+//        LoginCredentials loginCredentials = new LoginCredentials(email, password);
+
+        Map<String, String> body = new HashMap<>();
+        body.put("email", email);
+        body.put("password", password);
+
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+        //@TODO ipv Map.class een User Class aanmaken, zodat specifiek die structuur gestuurd wotdt.
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Map<String, Object> responseBody = response.getBody();
-                String accessToken = responseBody.get("access_token");
-                System.out.println("accesstoken: " + accessToken);
 
                 Map<String, Object> userMap = (Map<String, Object>) responseBody.get("user");
 
@@ -51,21 +67,18 @@ public class SupabaseAuthService {
                 System.out.println("ID: " + userId);
 
                 ProfileEntity userProfile = profileRepository.findById(userId);
-                if (userProfile != null) {
-                    if (userProfile.getRole().equals("ADMIN")) {
-                        return ResponseEntity.ok(Map.of("ok", true));
-                    } else {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-                    }
+                if (userProfile == null) {
+                    return false;
+                }
+                if (userProfile.getRole().equals("ADMIN")) {
+                    return true;
                 }
             }
-            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
+            //mogelijk invalid login credentials
             System.out.println("Error: " + e.getMessage());
-            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return false;
         }
+        return false;
     }
-
-    //@TODO een processResponse method aanmaken, zodat het versturen van login attempt & afhandelen response, netjes
-    //gesplit zijn.
 }
