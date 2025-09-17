@@ -1,5 +1,6 @@
 package org.example.codecompasssolo.Service;
 
+import org.example.codecompasssolo.dto.LoginCredentials;
 import org.example.codecompasssolo.entity.ProfileEntity;
 import org.example.codecompasssolo.entity.UserEntity;
 import org.example.codecompasssolo.repository.ProfileRepository;
@@ -42,23 +43,10 @@ public class SupabaseAuthService {
         headers.set("apikey", supabase_anon_api_key);
 
 
-//        //@TODO TMP Quick class, later eigen file, netter uitwerekn,.
-//        class LoginCredentials {
-//            public String username;
-//            public String password;
-//            public LoginCredentials(String username, String password) {
-//                this.username = username;
-//                this.password = password;
-//            }
-//        }
-//        LoginCredentials loginCredentials = new LoginCredentials(email, password);
+        LoginCredentials loginCredentials = new LoginCredentials(email, password);
+        HttpEntity<LoginCredentials> request = new HttpEntity<>(loginCredentials, headers);
 
-        Map<String, String> body = new HashMap<>();
-        body.put("email", email);
-        body.put("password", password);
 
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
-        //@TODO ipv Map.class een User Class aanmaken, zodat specifiek die structuur gestuurd wotdt.
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
@@ -85,4 +73,7 @@ public class SupabaseAuthService {
         }
         return false;
     }
+
+    //@TODO een processResponse method aanmaken, zodat het versturen van login attempt & afhandelen response, netjes
+    //gesplit zijn.
 }
