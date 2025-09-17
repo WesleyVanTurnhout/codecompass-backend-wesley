@@ -5,6 +5,7 @@ import org.example.codecompasssolo.entity.UserEntity;
 import org.example.codecompasssolo.repository.ProfileRepository;
 import org.example.codecompasssolo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +25,15 @@ public class SupabaseAuthService {
     @Autowired
     ProfileRepository profileRepository;
 
+    @Value("${SUPABASE_PROJECT_URL}")
+    String supabaseProjectUrl;
+
+    @Value("${SUPABASE_ANON_API_KEY}")
+    String supabase_anon_api_key;
+
     public Boolean attemptLogin(String email, String password) {
 
         RestTemplate restTemplate = new RestTemplate();
-        //@TODO dit ook in .env zetten
-        String supabaseProjectUrl = "https://mingbxukwyoovoamwgnu.supabase.co";
-        String supabase_anon_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbmdieHVrd3lvb3ZvYW13Z251Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2NjY1ODIsImV4cCI6MjA3MzI0MjU4Mn0.pCetKiRF60M6K5xjqTeup6UkarsuDEi9i68m-JLxD8Q";
 
         String loginUrl = supabaseProjectUrl + "/auth/v1/token?grant_type=password";
 
