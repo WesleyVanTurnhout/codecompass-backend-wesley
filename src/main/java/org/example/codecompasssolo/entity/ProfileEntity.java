@@ -29,4 +29,11 @@ public class ProfileEntity {
     private UserEntity user;
 
     // Getters and Setters ...
+    public String getRole() {
+        return role;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
 }

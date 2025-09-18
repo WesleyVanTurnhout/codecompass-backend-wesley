@@ -2,22 +2,14 @@ package org.example.codecompasssolo.Service;
 
 import org.example.codecompasssolo.dto.LoginCredentials;
 import org.example.codecompasssolo.entity.ProfileEntity;
-import org.example.codecompasssolo.entity.UserEntity;
 import org.example.codecompasssolo.repository.ProfileRepository;
-import org.example.codecompasssolo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpHeaders;
 
-
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,7 +24,7 @@ public class SupabaseAuthService {
     @Value("${SUPABASE_ANON_API_KEY}")
     String supabase_anon_api_key;
 
-    public Boolean attemptLogin(String email, String password) {
+    public ResponseEntity attemptLogin(String email, String password) {
 
         RestTemplate restTemplate = new RestTemplate();
 
@@ -42,10 +34,8 @@ public class SupabaseAuthService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("apikey", supabase_anon_api_key);
 
-
         LoginCredentials loginCredentials = new LoginCredentials(email, password);
         HttpEntity<LoginCredentials> request = new HttpEntity<>(loginCredentials, headers);
-
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
@@ -59,19 +49,19 @@ public class SupabaseAuthService {
                 System.out.println("ID: " + userId);
 
                 ProfileEntity userProfile = profileRepository.findById(userId);
-                if (userProfile == null) {
-                    return false;
-                }
-                if (userProfile.getRole().equals("ADMIN")) {
-                    return true;
+                if (userProfile != null) {
+                    if (userProfile.getRole().equals("ADMIN")) {
+                        return ResponseEntity.ok(Map.of("ok", true));
+                    } else {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
                 }
             }
+            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
-            //mogelijk invalid login credentials
             System.out.println("Error: " + e.getMessage());
-            return false;
+            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return false;
     }
 
     //@TODO een processResponse method aanmaken, zodat het versturen van login attempt & afhandelen response, netjes
