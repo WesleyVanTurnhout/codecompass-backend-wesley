@@ -43,6 +43,7 @@ public class SupabaseAuthService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 Map<String, Object> responseBody = response.getBody();
 
+                String accessToken = (String) responseBody.get("access_token");
                 Map<String, Object> userMap = (Map<String, Object>) responseBody.get("user");
 
                 UUID userId = UUID.fromString(userMap.get("id").toString());
@@ -51,7 +52,19 @@ public class SupabaseAuthService {
                 ProfileEntity userProfile = profileRepository.findById(userId);
                 if (userProfile != null) {
                     if (userProfile.getRole().equals("ADMIN")) {
-                        return ResponseEntity.ok(Map.of("ok", true));
+                        ResponseCookie cookie = ResponseCookie.from("jwt", accessToken)
+                                .httpOnly(true)
+                                .secure(true)
+                                .sameSite("Strict")
+                                .path("/")
+                                .maxAge(3600)
+                                .build();
+                        HttpHeaders responseHeaders = new HttpHeaders();
+                        responseHeaders.add(HttpHeaders.SET_COOKIE, cookie.toString());
+
+                        return ResponseEntity.ok()
+                                .headers(responseHeaders)
+                                .body(Map.of("ok", true));
                     } else {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                     }
