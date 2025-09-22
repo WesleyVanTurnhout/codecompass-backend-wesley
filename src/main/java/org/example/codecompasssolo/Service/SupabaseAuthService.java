@@ -1,5 +1,7 @@
 package org.example.codecompasssolo.Service;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.example.codecompasssolo.dto.LoginCredentials;
 import org.example.codecompasssolo.entity.ProfileEntity;
 import org.example.codecompasssolo.repository.ProfileRepository;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.WebUtils;
 
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +46,7 @@ public class SupabaseAuthService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 Map<String, Object> responseBody = response.getBody();
 
+                String accessToken = (String) responseBody.get("access_token");
                 Map<String, Object> userMap = (Map<String, Object>) responseBody.get("user");
 
                 UUID userId = UUID.fromString(userMap.get("id").toString());
@@ -51,7 +55,19 @@ public class SupabaseAuthService {
                 ProfileEntity userProfile = profileRepository.findById(userId);
                 if (userProfile != null) {
                     if (userProfile.getRole().equals("ADMIN")) {
-                        return ResponseEntity.ok(Map.of("ok", true));
+                        ResponseCookie cookie = ResponseCookie.from("jwt", accessToken)
+                                .httpOnly(true)
+                                .secure(true)
+                                .sameSite("Strict")
+                                .path("/")
+                                .maxAge(3600)
+                                .build();
+                        HttpHeaders responseHeaders = new HttpHeaders();
+                        responseHeaders.add(HttpHeaders.SET_COOKIE, cookie.toString());
+
+                        return ResponseEntity.ok()
+                                .headers(responseHeaders)
+                                .body(Map.of("ok", true));
                     } else {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                     }
@@ -64,6 +80,50 @@ public class SupabaseAuthService {
         }
     }
 
-    //@TODO een processResponse method aanmaken, zodat het versturen van login attempt & afhandelen response, netjes
-    //gesplit zijn.
+    public ResponseEntity logOut(HttpServletRequest request){
+        Cookie jwtCookie = WebUtils.getCookie(request, "jwt");
+
+        if (jwtCookie != null) {
+            String accessToken = jwtCookie.getValue();
+            try {
+                String logoutUrl = supabaseProjectUrl + "/auth/v1/logout";
+                RestTemplate restTemplate = new RestTemplate();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setBearerAuth(accessToken);
+                headers.set("apikey", supabase_anon_api_key);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                HttpEntity<String> logoutRequest = new HttpEntity<>(null, headers);
+
+                ResponseEntity<String> response = restTemplate.exchange(
+                        logoutUrl,
+                        HttpMethod.POST,
+                        logoutRequest,
+                        String.class
+                );
+
+                if (response.getStatusCode().is2xxSuccessful()) {
+                    System.out.println("Supabase logout api succesvol aangeroepen");
+                } else {
+                    System.out.println("Niet gelukt om via Supabase uit te loggen...");
+                }
+            } catch (Exception e) {
+                System.out.println("Exception tijdens supabase logout api call: " + e.getMessage());
+            }
+        }
+
+        ResponseCookie deleteCookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.add(HttpHeaders.SET_COOKIE, deleteCookie.toString());
+
+        return ResponseEntity.ok().headers(responseHeaders).build();
+    }
+
 }
