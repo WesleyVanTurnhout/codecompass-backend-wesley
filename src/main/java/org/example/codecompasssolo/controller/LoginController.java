@@ -1,5 +1,6 @@
 package org.example.codecompasssolo.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.example.codecompasssolo.Service.SupabaseAuthService;
 import org.example.codecompasssolo.dto.LoginCredentials;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,5 +21,8 @@ public class LoginController {
         return supabaseAuthService.attemptLogin(credentials.getEmail(), credentials.getPassword());
     }
 
-
+    @PostMapping("/api/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        return supabaseAuthService.logOut(request);
+    }
 }
