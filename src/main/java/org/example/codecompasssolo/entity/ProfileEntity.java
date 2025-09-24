@@ -29,6 +29,8 @@ public class ProfileEntity {
     private UserEntity user;
 
     // Getters and Setters ...
+    public UUID getId() {return id; }
+
     public String getRole() {
         return role;
     }

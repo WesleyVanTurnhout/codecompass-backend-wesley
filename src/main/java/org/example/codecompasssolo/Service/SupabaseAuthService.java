@@ -1,10 +1,15 @@
 package org.example.codecompasssolo.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.codecompasssolo.dto.LoginCredentials;
 import org.example.codecompasssolo.entity.ProfileEntity;
+import org.example.codecompasssolo.entity.UserEntity;
 import org.example.codecompasssolo.repository.ProfileRepository;
+import org.example.codecompasssolo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -12,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.WebUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,6 +26,9 @@ public class SupabaseAuthService {
 
     @Autowired
     ProfileRepository profileRepository;
+
+    @Autowired
+    UserRepository userRepository;
 
     @Value("${SUPABASE_PROJECT_URL}")
     String supabaseProjectUrl;
@@ -50,7 +59,6 @@ public class SupabaseAuthService {
                 Map<String, Object> userMap = (Map<String, Object>) responseBody.get("user");
 
                 UUID userId = UUID.fromString(userMap.get("id").toString());
-                System.out.println("ID: " + userId);
 
                 ProfileEntity userProfile = profileRepository.findById(userId);
                 if (userProfile != null) {
@@ -103,13 +111,8 @@ public class SupabaseAuthService {
                         String.class
                 );
 
-                if (response.getStatusCode().is2xxSuccessful()) {
-                    System.out.println("Supabase logout api succesvol aangeroepen");
-                } else {
-                    System.out.println("Niet gelukt om via Supabase uit te loggen...");
-                }
             } catch (Exception e) {
-                System.out.println("Exception tijdens supabase logout api call: " + e.getMessage());
+                System.out.println("Exception uitloggen: " + e.getMessage());
             }
         }
 
@@ -126,4 +129,28 @@ public class SupabaseAuthService {
         return ResponseEntity.ok().headers(responseHeaders).build();
     }
 
+
+    public UserEntity getLoggedinUser(String token) throws JsonProcessingException {
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("apikey", supabase_anon_api_key);
+        headers.setBearerAuth(token);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                supabaseProjectUrl + "/auth/v1/user",
+                HttpMethod.GET,
+                request,
+                String.class
+        );
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(response.getBody());
+        String uuid = rootNode.get("id").asText();
+
+        return userRepository.findById(UUID.fromString(uuid));
+    }
 }

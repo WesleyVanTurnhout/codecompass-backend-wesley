@@ -112,5 +112,7 @@ public class UserEntity {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private ProfileEntity profile;
 
-    // Getters and Setters ...
+    public UUID getId() {
+        return id;
+    }
 }
