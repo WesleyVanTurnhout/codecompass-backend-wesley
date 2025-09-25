@@ -140,17 +140,13 @@ public class SupabaseAuthService {
 
         HttpEntity<String> request = new HttpEntity<>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<UserEntity> response = restTemplate.exchange(
                 supabaseProjectUrl + "/auth/v1/user",
                 HttpMethod.GET,
                 request,
-                String.class
+                UserEntity.class
         );
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode rootNode = objectMapper.readTree(response.getBody());
-        String uuid = rootNode.get("id").asText();
-
-        return userRepository.findById(UUID.fromString(uuid));
+        return response.getBody();
     }
 }
